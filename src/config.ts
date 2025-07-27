@@ -10,6 +10,8 @@ import { LinkPreset } from "./types/config";
 export const siteConfig: SiteConfig = {
 	title: "栈上堆语",
 	subtitle: "成长日记",
+	keywords: ["HTML", "CSS", "JavaScript", "TypeScript"],
+	description: "这是我的博客，会分享技术心得，也记日常生活 —— 用来写下我一步步成长的故事。",
 	lang: "zh_CN", // 'en', 'zh_CN', 'zh_TW', 'ja', 'ko', 'es', 'th'
 	themeColor: {
 		hue: 250, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345

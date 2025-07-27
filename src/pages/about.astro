@@ -14,7 +14,7 @@ if (!aboutPost) {
 
 const { Content } = await render(aboutPost);
 ---
-<MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.about)}>
+<MainGridLayout title={i18n(I18nKey.about)} keywords={["关于", "个人介绍", "博客作者"]} description="这是我自己的一些个人信息，包括我的兴趣爱好和会的一些技术栈。">
     <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
         <div class="card-base z-10 px-9 py-6 relative w-full ">
             <Markdown class="mt-2">
