@@ -78,13 +78,13 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
+> 如果你使用 Ubuntu 衍生发行版，例如 Linux Mint，则可能需要使用 `UBUNTU_CODENAME` 而不是 `VERSION_CODENAME`
+
 3. 更新 apt 软件包索引
 
 ```bash
 sudo apt-get update
 ```
-
-> 如果你使用 Ubuntu 衍生发行版，例如 Linux Mint，则可能需要使用 `UBUNTU_CODENAME` 而不是 `VERSION_CODENAME`
 
 4. 安装 docker engine
 
