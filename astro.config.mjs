@@ -30,7 +30,7 @@ import vercel from "@astrojs/vercel";
 export default defineConfig({
   site: "https://blog.zsdy.dev/",
   base: "/",
-  trailingSlash: "always",
+  trailingSlash: "never",
 
   integrations: [
       tailwind({
