@@ -60,7 +60,7 @@ onMount(async () => {
 		await initializeSearchData();
 		searchDataReady = true;
 		initialized = true;
-		
+
 		// 如果已有搜索关键词，立即执行搜索
 		if (keywordDesktop) search(keywordDesktop, true);
 		if (keywordMobile) search(keywordMobile, false);
