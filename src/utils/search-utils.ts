@@ -65,10 +65,7 @@ function generateHighlightedExcerpt(
 ): string {
 	const maxLength = 150;
 
-	if (
-		item.meta.description &&
-		item.meta.description.toLowerCase().includes(searchTerm)
-	) {
+	if (item.meta.description?.toLowerCase().includes(searchTerm)) {
 		return highlightText(item.meta.description, searchTerm, maxLength);
 	}
 
@@ -98,7 +95,7 @@ function highlightText(
 	let result = text;
 
 	if (result.length > maxLength) {
-		result = result.substring(0, maxLength) + "...";
+		result = `${result.substring(0, maxLength)}...`;
 	}
 
 	const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, "gi");

@@ -2,7 +2,7 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
-import { searchPosts, initializeSearchData } from "@utils/search-utils";
+import { initializeSearchData, searchPosts } from "@utils/search-utils";
 import { onMount } from "svelte";
 import type { SearchResult } from "@/global";
 

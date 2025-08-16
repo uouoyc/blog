@@ -1,5 +1,5 @@
-import type { APIRoute } from "astro";
 import { getSortedPosts } from "@utils/content-utils";
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async () => {
 	try {
