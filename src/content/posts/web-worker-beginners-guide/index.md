@@ -140,7 +140,7 @@ onmessage = (e) => {
 > 在主线程中使用时，`onmessage` 和 `postMessage()` 必须挂在 `worker` 实例对象上 (如 `myWorker.onmessage`)。而在 worker 内部使用时，它们是全局作用域的一部分（即 `self.onmessage`）。
 > 当一个消息在主线程和 worker 之间传递时，它默认被复制，而不是共享。
 
-### 终止 worker
+### 终止 Worker
 
 当 worker 完成任务以后，主线程可以调用 `terminate()` 方法来立即终止它，以释放资源。
 
