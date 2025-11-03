@@ -3,7 +3,7 @@ title: 使用Prettier自动排序Tailwind CSS类名
 published: 2025-08-16
 description: "在项目中使用Prettier自动排序Tailwind CSS类名，提升代码可读性和一致性。"
 image: "./cover.webp"
-tags: ["tailwindcss", "prettier"]
+tags: ["tailwind css", "prettier"]
 category: "学习笔记"
 draft: false
 ---

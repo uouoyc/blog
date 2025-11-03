@@ -48,13 +48,19 @@ onMount(async () => {
 		filteredPosts = filteredPosts.filter(
 			(post) =>
 				Array.isArray(post.data.tags) &&
-				post.data.tags.some((tag) => tags.includes(tag)),
+				post.data.tags.some((tag) =>
+					tags.includes(tag.trim().replace(/\s+/g, "-").toLocaleLowerCase()),
+				),
 		);
 	}
 
 	if (categories.length > 0) {
 		filteredPosts = filteredPosts.filter(
-			(post) => post.data.category && categories.includes(post.data.category),
+			(post) =>
+				post.data.category &&
+				categories.includes(
+					post.data.category.trim().replace(/\s+/g, "-").toLocaleLowerCase(),
+				),
 		);
 	}
 

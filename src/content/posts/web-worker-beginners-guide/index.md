@@ -3,7 +3,7 @@ title: Web Worker初学者指南
 published: 2025-11-02
 description: "了解什么是Web Worker及其工作原理，学习如何在前端项目中使用Web Worker来提升性能和用户体验。"
 image: "./cover.webp"
-tags: ["web-worker"]
+tags: ["web worker"]
 category: "学习笔记"
 draft: false
 ---
