@@ -1,6 +1,6 @@
 ---
-title: Web Worker初学者指南
-published: 2025-11-02
+title: Web Worker使用教程
+published: 2025-11-09
 description: "了解什么是Web Worker及其工作原理，学习如何在前端项目中使用Web Worker来提升性能和用户体验。"
 image: "./cover.webp"
 tags: ["web worker"]
@@ -10,573 +10,757 @@ draft: false
 
 通常情况下，网页在执行复杂任务时可能会卡住，这是因为 JavaScript 默认在主线程执行，所有计算、渲染和用户交互都在同一线程上。如果遇到耗时任务，页面就会被阻塞，导致用户界面无响应。
 
-Web Worker 可以为 Web 应用提供一种在 后台线程 中运行 JavaScript 的方法，它可以独立执行耗时任务，而不影响用户界面的流畅度。
+Web Worker 可以为 Web 应用提供一种在后台线程中运行 JavaScript 的方法，它可以独立执行耗时任务，而不影响用户界面的流畅度。
 
-Worker 线程可以执行纯计算任务，也可以发起网络请求（如 `Fetch` 或 `XMLHttpRequest`）。Worker 与主线程之间通过消息机制互相通信：主线程把任务分派给 Worker，Worker 完成后将结果发送回主线程。
+## Web Worker 的核心特性
 
-## 核心限制与隔离环境
-
-在开始使用之前，理解 Web Worker 的运行环境至关重要。Worker 运行在一个与主线程完全隔离的沙盒环境中。
+在开始使用之前，我们需要先理解 Web Worker 的运行环境，Worker 是一个运行与主线程完全隔离的沙盒环境中，并且有以下几种特性：
 
 - **无法操作 DOM**：Worker 无法访问主线程的 `window` 或 `document` 对象。这意味着你不能在 Worker 中进行任何 DOM 查询或界面更新。
 - **独立的全局上下文**：Worker 拥有自己的全局作用域。对于专用 Worker，它是 `DedicatedWorkerGlobalScope`；对于共享 Worker，它是 `SharedWorkerGlobalScope`。在 Worker 内部，`self` 关键字指向这个全局作用域（即 `self === this`）。
 - **通信方式**：唯一的通信渠道是使用 `postMessage()` 发送消息，并通过 `onmessage` 事件处理函数接收消息。
-- **可用的 API**：虽然无法访问 DOM，但 Worker 内部仍然可以使用众多 Web API，包括：
+- **可用的 API**：虽然无法访问 DOM，但 Worker 内部仍然可以使用众多的 Web API，包括：
   - `Fetch` / `XMLHttpRequest`
   - `WebSocket`
   - `IndexedDB`
-  - ......
+  - …
   - [查看 MDN 上的完整可用函数列表](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Functions_and_classes_available_to_workers)
 - **脚本加载**：Worker 可以使用 `importScripts()` 函数同步加载外部脚本。
 - **同源策略**：Worker 脚本文件必须遵守同源策略。
 
 总的来说，Web Worker 提供了一个安全、隔离的后台环境，通过异步消息机制与主线程灵活通信，是处理耗时任务、避免 UI 阻塞的理想方案。
 
-## 基本用法
+## 专用 Worker
 
-### 专用 Worker
+这是最常用的 Worker 类型，仅由创建它的脚本访问。
 
-专用 worker 是指只能被创建它的那个主脚本所访问的 worker。创建专用 worker 的方法很简单，只需要调用 `Worker()` 构造函数即可：
+### 创建与通信
 
-```js
-const myWorker = new Worker("worker.js");
-```
+Web Worker 的通信模型基于消息传递（message passing），这是一种典型的"生产者-消费者"模式：主线程是任务发起者（生产者），Worker 是任务执行者（消费者），双方通过异步消息交换数据。
 
-你可以通过 `postMessage()` 方法向 worker 发送消息，并通过 `onmessage` 事件处理函数接收来自 worker 的消息。
+#### 通信流程
 
-我们将用一个密集型计算任务（计算 1 到 N 的累加和）来展示 Worker 的价值。
-
-**index.html:**
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Worker</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      button {
-        padding: 10px 20px;
-        font-size: 16px;
-      }
-      #result,
-      #main-counter {
-        margin-top: 10px;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>计算 1 到 N 的累加和</h1>
-
-    <button id="compute-btn">开始耗时计算</button>
-    <div id="result">计算结果会显示在这里</div>
-    <div id="main-counter">主线程计数器: 0</div>
-
-    <script src="main.js"></script>
-  </body>
-</html>
-```
-
-**main.js:**
+1. 主线程调用 `worker.postMessage(data)`，将任务数据发送给 Worker
+2. Worker 线程在 `self.onmessage` 回调中接收数据
+3. Worker 处理完成后，调用 `self.postMessage(result)` 回传结果
+4. 主线程通过 `worker.onmessage` 接收结果
 
 ```js
-const computeButton = document.getElementById("compute-btn");
-const resultDisplay = document.getElementById("result");
-const mainThreadCounter = document.getElementById("main-counter");
+// main.js
+const worker = new Worker("worker.js");
+worker.postMessage({ type: "sum", numbers: [1, 2, 3, 4] });
 
-// 创建 Worker 实例
-const myWorker = new Worker("calc-worker.js");
-
-// 向 Worker 分配任务
-computeButton.onclick = () => {
-  const largeNumber = 10000000000;
-  console.log("Main: 正在向 Worker 发送任务...");
-  resultDisplay.textContent = "Worker 正在计算中...";
-  myWorker.postMessage(largeNumber);
+worker.onmessage = (e) => {
+  console.log("结果:", e.data);
 };
-
-// 接收来自 Worker 的结果
-myWorker.onmessage = (e) => {
-  console.log("Main: 从 Worker 收到消息");
-  resultDisplay.textContent = `计算结果: ${e.data}`;
-};
-
-// 在主线程上运行一个计数器，证明 Worker 运行时 UI 未被阻塞
-let count = 0;
-setInterval(() => {
-  mainThreadCounter.textContent = `主线程计数器: ${count++}`;
-}, 1000);
 ```
 
-**calc-worker.js:**
-
 ```js
-console.log("Worker: 脚本已加载，等待消息...");
-
-onmessage = (e) => {
-  console.log("Worker: 收到来自主脚本的消息");
-  const maxNum = e.data;
-
-  // 执行耗时计算
-  let sum = 0;
-  for (let i = 0; i < maxNum; i++) {
-    sum += i;
+// worker.js
+self.onmessage = (e) => {
+  const { type, numbers } = e.data;
+  if (type === "sum") {
+    const result = numbers.reduce((a, b) => a + b, 0);
+    self.postMessage(result);
   }
-
-  // 计算完成，将结果发回主线程
-  console.log("Worker: 计算完成，正在发回结果...");
-  postMessage(sum);
 };
 ```
 
-在这个例子中，即使用户点击按钮执行了百亿次的循环，主线程的计数器依然会正常运行，证明了 UI 没有被阻塞。
+在上面的案例中，`postMessage()` 不是引用传递，而是使用[结构化克隆算法](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)对数据进行深拷贝。这意味着：
 
-> 在主线程中使用时，`onmessage` 和 `postMessage()` 必须挂在 `worker` 实例对象上 (如 `myWorker.onmessage`)。而在 worker 内部使用时，它们是全局作用域的一部分（即 `self.onmessage`）。
-> 当一个消息在主线程和 worker 之间传递时，它默认被复制，而不是共享。
+- 大对象（如 100MB 的 `ArrayBuffer`）会带来显著性能开销
+- 函数、DOM 节点等类型无法传递，会抛出 `DATA_CLONE_ERR` 错误
 
-### 终止 Worker
+在使用的时候，可以注意下面几点：
 
-当 worker 完成任务以后，主线程可以调用 `terminate()` 方法来立即终止它，以释放资源。
+- 传递最小必要数据，避免发送整个大型对象
+- 对于大数据（如图像、文件），优先考虑转移所有权
+- 对复杂任务，建议封装为带 ID 的请求-响应协议
 
-```js
-myWorker.terminate();
-```
+### 错误处理
 
-Worker 也可以在内部通过调用 `self.close()` 来自行终止。
+Worker 运行时如果出错，主线程可以通过 `onerror` 事件捕获。这个错误事件包含了调试所需的关键信息：
 
-### 处理错误
+- `message`：错误描述信息
+- `filename`：出错的脚本文件路径
+- `lineno`：错误发生的行号
 
-当 worker 出现运行中错误时，它的 `onerror` 事件处理函数会被调用。它会收到一个扩展了 `ErrorEvent` 接口的名为 `error` 的事件。
-
-该事件不会冒泡并且可以被取消；为了防止触发默认动作，worker 可以调用错误事件的 `preventDefault()` 方法。
-
-错误事件有以下三个关键字段：
-
-- **message**：可读性良好的错误消息。
-- **filename**：发生错误的脚本文件名。
-- **lineno**：发生错误时所在脚本文件的行号。
-
-### 生成 Subworker
-
-如果需要，worker 能够生成更多的 worker，这就是所谓的 subworker。它们必须托管在同源的父页面内。并且，subworker 解析 URI 时会相对于父 worker 的地址而不是自身页面的地址。
-
-### 引入脚本与库
-
-Worker 线程能够访问一个全局函数 `importScripts()` 来引入脚本，该函数接受 0 个或者多个 URI 作为参数来引入资源；以下例子都是合法的：
+需要注意的是，这个错误事件默认不会冒泡，但可以通过调用 `preventDefault()` 来阻止浏览器的默认错误处理行为。
 
 ```js
-importScripts(); /* 什么都不引入 */
-importScripts("foo.js"); /* 只引入 "foo.js" */
-importScripts("foo.js", "bar.js"); /* 引入两个脚本 */
-importScripts("//example.com/hello.js"); /* 你可以从其他来源导入脚本 */
+// main.js
+const worker = new Worker("worker.js");
+
+worker.onerror = (err) => {
+  console.error(`Worker 错误: ${err.message}`);
+  console.error(`文件: ${err.filename}`);
+  console.error(`行号: ${err.lineno}`);
+
+  err.preventDefault();
+};
+
+worker.postMessage({ type: "calculate", value: 100 });
 ```
 
-浏览器同步加载并运行每一个列出的脚本。每个脚本中的全局对象都能够被 worker 使用。如果脚本无法加载，将抛出 `NETWORK_ERROR` 异常，接下来的代码也无法执行。
+```js
+// worker.js
+self.onmessage = (e) => {
+  const { type, value } = e.data;
 
-> 脚本的下载顺序不固定，但执行时会按照传入 `importScripts()` 中的文件名顺序进行。这个过程是同步完成的；直到所有脚本都下载并运行完毕，`importScripts()` 才会返回。
+  if (type === "calculate") {
+    throw new Error("计算过程中发生错误");
+  }
+};
+```
+
+### 关闭 Worker
+
+Worker 提供两种关闭方式：
+
+- `worker.terminate()`（主线程）：立即终止，不等待当前任务。这是一种强制性的终止方式，会立即停止 Worker 的执行，即使它正在处理任务。
+- `self.close()`（Worker 内）：执行完当前 Event Loop 后关闭。这是一种优雅的关闭方式，允许 Worker 完成当前的消息处理后再退出。
+
+建议任务完成后主动关闭 Worker，避免内存泄漏。
+
+### 加载外部脚本
+
+使用 `importScripts()` 同步加载传统脚本：
+
+```js
+// worker.js
+importScripts("utils.js");
+
+self.onmessage = (e) => {
+  const { numbers } = e.data;
+
+  const result = {
+    sum: sum(numbers),
+    average: average(numbers),
+  };
+
+  self.postMessage(result);
+};
+```
+
+```js
+// utils.js
+function sum(arr) {
+  return arr.reduce((a, b) => a + b, 0);
+}
+
+function average(arr) {
+  return sum(arr) / arr.length;
+}
+```
+
+注意事项：
+
+- `importScripts()` 是同步执行的，会阻塞 Worker 线程
+- 支持跨域（需服务器允许 CORS）
+- 可以同时加载多个脚本，按顺序执行
+- 不支持 ES Module 语法
 
 ## 共享 Worker
 
-一个共享 worker (Shared Worker) 可以被多个浏览上下文使用——即使这些脚本来自不同的 window、iframe，甚至是其他 worker。
+共享 Worker 是一种特殊类型的 Web Worker，它允许多个浏览器上下文（如多个标签页、iframe、甚至其他 Worker）共享同一个后台线程。这使得它非常适合用于：
 
-> 如果共享 worker 可以被多个浏览上下文调用，所有这些浏览上下文必须属于同源（相同的协议，主机和端口号）。
+- 多页面状态同步
+- 共享 WebSocket 连接
+- 集中式数据缓存或计算服务
 
-### 生成一个共享 Worker
+需要注意的是，Shared Worker 并非主流方案，浏览器兼容性相对较差。使用前务必评估兼容性需求。
 
-生成一个新的共享 worker 与生成一个专用 worker 非常相似，只是构造器的名字不同：
+### 创建与连接机制
 
-```js
-const myWorker = new SharedWorker("worker.js");
-```
+与专用 Worker 不同，Shared Worker 的生命周期不由单个页面控制，而是由所有连接它的上下文共同维护。它的核心在于 `MessagePort` 通信端口，每个连接都获得一个独立的端口，彼此隔离。
 
-一个非常大的区别在于，与一个共享 worker 通信必须通过一个 `port` 对象。这就像一个显式的通信“端口”。在专用 worker 中，这个端口是隐式创建和使用的。
+#### 连接流程详解
 
-在传递消息之前，端口连接必须被显式地打开，打开方式是使用 `onmessage` 事件处理函数（隐式打开）或者 `start()` 方法（显式打开）。
-
-> 只有当你使用 `addEventListener()` 方式监听 `message` 事件时，才必须手动调用 `port.start()`。如果直接使用 `port.onmessage` 赋值，端口会自动打开。
-
-### 共享 Worker 中消息的接收和发送
-
-我们将用一个跨标签页状态同步的例子来演示。
-
-**index.html:**
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Worker</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      button {
-        padding: 10px 20px;
-        font-size: 16px;
-      }
-      #status {
-        margin-top: 10px;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>跨标签页状态同步示例</h1>
-
-    <button id="update-btn">更新状态</button>
-    <div id="status">状态显示在这里</div>
-
-    <script src="main.js"></script>
-  </body>
-</html>
-```
-
-**main.js:**
+1. 主线程执行 `new SharedWorker('shared.js')`，浏览器检查是否已有同源同脚本的 Shared Worker 实例
+2. 若存在，则复用该实例；若不存在，则启动新线程
+3. 触发 Worker 内的 `self.onconnect` 事件，传入一个 `MessagePort` 对象
+4. 主线程通过 `sharedWorker.port` 获取该端口，并建立双向通信
 
 ```js
-const updateBtn = document.getElementById("update-btn");
-const statusDiv = document.getElementById("status");
+// main.js
+const sharedWorker = new SharedWorker("shared-worker.js");
+const port = sharedWorker.port;
 
-// 创建 Worker 实例
-const myWorker = new SharedWorker("shared-worker.js");
-
-// 通过 port 对象发送消息
-updateBtn.onclick = () => {
-  const newMessage = `状态已更新: ${new Date().toLocaleTimeString()}`;
-  myWorker.port.postMessage(newMessage);
+// 使用 onmessage 会自动启动端口
+port.onmessage = (e) => {
+  console.log("收到:", e.data);
 };
 
-// 通过 port 对象接收消息
-myWorker.port.onmessage = (e) => {
-  console.log("Main: 收到广播消息");
-  statusDiv.textContent = e.data;
-};
+port.postMessage("Hello from page");
+
+// 若使用 addEventListener，则必须手动启动
+// port.addEventListener("message", (e) => {
+//   console.log("收到:", e.data);
+// });
+// port.start(); // 必须调用
 ```
 
-**shared-worker.js:**
-
 ```js
-// 存储所有连接的端口
-const connectedPorts = [];
+// shared-worker.js
+const ports = [];
 
-// 1. 当一个新的上下文连接时，触发 'onconnect'
-onconnect = (e) => {
-  // 2. 获取这个新连接的端口
+self.onconnect = (e) => {
   const port = e.ports[0];
+  ports.push(port);
 
-  // 3. 将端口存入列表
-  connectedPorts.push(port);
-  console.log(`Worker: 新连接加入, 总数: ${connectedPorts.length}`);
-
-  // 4. 监听来自这个特定端口的消息
-  port.onmessage = (e) => {
-    const message = e.data;
-
-    // 5. 广播！将收到的消息发送给所有连接的端口
-    connectedPorts.forEach((p) => {
-      p.postMessage(message);
-    });
+  port.onmessage = (msg) => {
+    // 广播给所有连接
+    ports.forEach((p) => p.postMessage(`[广播] ${msg.data}`));
   };
 };
 ```
 
-现在，如果你打开多个相同的页面，在一个页面上点击更新按钮，所有其他页面的状态都会被这个共享 Worker 同步更新。
+为什么需要 `port.start()`？
 
-## 关于线程安全
+当使用 `port.addEventListener('message', ...)` 时，浏览器不会自动启动消息通道，必须显式调用 `port.start()` 才能激活接收。而 `port.onmessage = ...` 是一种"赋值式监听"，浏览器会自动启动。
 
-Worker 接口会生成真正的操作系统级别的线程。在传统的多线程编程中，开发者需要手动处理内存同步、锁和竞态条件，这极易出错。
+#### 安全与限制
 
-然而，对于 web worker 来说，与其他线程的通信点被严格控制。你无法访问非线程安全的组件（如 DOM），也没有共享的内存（默认情况下）。所有数据都通过序列化（复制）来传递。这意味着你很难在 Web Worker 中引起并发问题。
+- 同源策略严格：所有连接页面必须协议、域名、端口完全一致
+- 无法访问 DOM：与专用 Worker 一样，Shared Worker 也无法操作页面
+- 调试困难：无法通过普通 DevTools 查看日志，需使用 `chrome://inspect/#workers`
 
-## 内容安全策略 (CSP)
+### 生命周期与清理
 
-有别于创建它的 document 对象，worker 有它自己的执行上下文。因此普遍来说，worker 并不受限于创建它的 document（或者父级 worker）的[内容安全策略](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP)。
+Shared Worker 的生命周期管理相对复杂：
 
-例如，假设一个 document 有如下头部声明：
-
-```js
-Content-Security-Policy: script-src 'self'
-```
-
-这个声明会禁止页面内的脚本使用 `eval()`。然而，如果该脚本创建了一个 worker，在 worker 上下文中执行的代码仍然可以使用 `eval()`。
-
-为了给 worker 指定内容安全策略，必须为发送 worker 代码的请求本身（即 `worker.js` 文件）设置 `Content-Security-Policy` 响应标头。
-
-> worker 脚本的源如果是一个全局性的唯一的标识符（例如，它的 URL 协议为 `data:` 或 `blob:`），worker 则会继承创建它的 document 或者 worker 的 CSP。
-
-## 数据的接收与发送
-
-在主页面与 `worker` 之间传递的数据是通过**拷贝**，而不是共享来完成的。传递给 `worker` 的对象需要经过序列化，接下来在另一端还需要反序列化。页面与 `worker` 不会共享同一个实例，最终的结果就是在每次通信结束时生成了数据的一个副本。
-
-### 结构化克隆
-
-大部分浏览器使用[结构化克隆](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)算法来实现该特性。
-
-这与 `JSON.stringify/JSON.parse` 不同，结构化克隆要强大得多。`JSON` 无法处理 `Date`, `RegExp`, `Map`, `Set`, `ArrayBuffer` 等类型，也无法处理循环引用。而结构化克隆可以正确地复制这些复杂对象。
-
-> 结构化克隆无法复制 `Error` 对象和 `Function` 对象。
-
-与 `JSON.stringify` 不同（它无法处理 `Date`、`Map` 等类型），结构化克隆可以保留复杂的数据类型。这里提供一个例子来证明结构化克隆的能力：
-
-**index.html:**
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Worker 结构化克隆测试</title>
-  </head>
-  <body>
-    <h1>查看控制台结果</h1>
-
-    <script src="main.js"></script>
-  </body>
-</html>
-```
-
-**main.js:**
+- Worker 在至少有一个活跃端口时运行
+- 所有端口关闭后，Worker 自动终止
+- 建议监听 `port.onmessageerror` 清理失效端口，防止内存泄漏
 
 ```js
-const myWorker = new Worker("worker.js");
+// shared-worker.js
+const ports = new Set();
 
-const complexData = {
-  text: "你好",
-  date: new Date(),
-  map: new Map([
-    ["a", 1],
-    ["b", 2],
-  ]),
-  set: new Set([1, 2, 3]),
-};
+self.onconnect = (e) => {
+  const port = e.ports[0];
+  ports.add(port);
 
-// 添加循环引用
-complexData.self = complexData;
+  port.onmessage = (msg) => {
+    ports.forEach((p) => {
+      try {
+        p.postMessage(msg.data);
+      } catch (err) {
+        // 端口已关闭，从集合中移除
+        ports.delete(p);
+      }
+    });
+  };
 
-myWorker.postMessage(complexData);
-```
-
-**worker.js:**
-
-```js
-onmessage = (e) => {
-  const data = e.data;
-
-  // 验证数据类型是否保留
-  console.log("接收到数据：", data);
-  console.log(data.text);
-  console.log(data.date instanceof Date);
-  console.log(data.map.get("a"));
-  console.log(data.set.has(3));
-  console.log(data.self === data);
+  // 监听端口关闭
+  port.onmessageerror = () => {
+    ports.delete(port);
+  };
 };
 ```
 
-这个例子证明了数据是被深度复制，并且保留了其复杂的类型和结构。
+### 调试技巧
 
-### 构建基于 Promise 的通信系统
+Shared Worker 的 `console.log` 不会出现在主页面控制台。
 
-普通的 `postMessage()` / `onmessage` 通信是事件驱动式的，不太符合现代异步编程习惯。我们可以用 Promise 封装它，使主线程可以像调用异步函数一样与 Worker 交互。
+正确的调试方式：
 
-**index.html:**
+**Chrome / Edge：**
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Worker</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>基于 Promise 的 Web Worker 示例</h1>
-    <p>打开浏览器控制台查看输出结果</p>
+1. 在地址栏访问 `chrome://inspect/#workers`
+2. 找到你的 Shared Worker，点击 "inspect"
+3. 在打开的 DevTools 中查看日志和调试信息
 
-    <script src="main.js"></script>
-  </body>
-</html>
-```
+**Firefox：**
 
-**main.js:**
+1. 在地址栏访问 `about:debugging#workers`
+2. 找到对应的 Shared Worker 进行调试
+
+## 高级用法
+
+### 基于 Promise 的封装
+
+将事件驱动通信转为异步函数调用，更符合现代编程习惯。这种封装方式可以让 Worker 的使用更加直观，避免回调地狱，并且可以使用 async/await 语法。
 
 ```js
-class PromisedWorker {
-  constructor(workerUrl) {
-    this.worker = new Worker(workerUrl);
-    this.messageHandlers = new Map(); // 存储 { id: { resolve, reject } }
-    this.nextMessageId = 0;
+// main.js
+class WorkerPromise {
+  constructor(url) {
+    this.worker = new Worker(url);
+    this.handlers = new Map();
+    this.id = 0;
 
-    this.worker.onmessage = (e) => {
-      const { id, status, result, error } = e.data;
-      if (!this.messageHandlers.has(id)) return;
-
-      const { resolve, reject } = this.messageHandlers.get(id);
-      if (status === "success") {
-        resolve(result);
-      } else {
-        reject(new Error(error));
+    this.worker.onmessage = ({ data }) => {
+      const { id, result, error } = data;
+      const handler = this.handlers.get(id);
+      if (handler) {
+        this.handlers.delete(id);
+        error ? handler.reject(new Error(error)) : handler.resolve(result);
       }
-      this.messageHandlers.delete(id); // 完成后删除处理器
+    };
+
+    this.worker.onerror = (err) => {
+      console.error("Worker 错误:", err);
+      // 拒绝所有待处理的 Promise
+      this.handlers.forEach((h) => h.reject(err));
+      this.handlers.clear();
     };
   }
 
-  // 发送任务并返回一个 Promise
-  post(task, payload) {
-    const id = this.nextMessageId++;
+  call(payload) {
     return new Promise((resolve, reject) => {
-      this.messageHandlers.set(id, { resolve, reject });
-      this.worker.postMessage({ id, task, payload });
+      const id = this.id++;
+      this.handlers.set(id, { resolve, reject });
+      this.worker.postMessage({ id, payload });
     });
   }
 
   terminate() {
     this.worker.terminate();
+    this.handlers.clear();
   }
 }
 
-// --- 使用 ---
-const myProWorker = new PromisedWorker("worker.js");
+// 使用示例
+const wp = new WorkerPromise("worker.js");
 
-async function runTasks() {
+// 可以使用 async/await
+async function calculate() {
   try {
-    console.log("Main: 请求 'sum'...");
-    const sumResult = await myProWorker.post("sum", [1, 2, 3, 4]);
-    console.log("Main: 'sum' 结果:", sumResult);
-
-    console.log("Main: 请求 'delay'...");
-    const delayResult = await myProWorker.post("delay", 1000);
-    console.log("Main: 'delay' 结果:", delayResult);
+    const result = await wp.call(12345);
+    console.log("平方结果:", result);
   } catch (err) {
-    console.error("Main: Worker 任务失败", err);
-  } finally {
-    myProWorker.terminate();
+    console.error("计算失败:", err);
   }
 }
-runTasks();
 ```
-
-**worker.js:**
 
 ```js
-const tasks = {
-  sum: (payload) => payload.reduce((a, b) => a + b, 0),
+// worker.js
+self.onmessage = (e) => {
+  const { id, payload: n } = e.data;
 
-  delay: (payload) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Delayed for ${payload}ms`);
-      }, payload);
-    });
-  },
-};
-
-onmessage = async (e) => {
-  const { id, task, payload } = e.data;
-
-  if (tasks[task]) {
-    try {
-      const result = await Promise.resolve(tasks[task](payload));
-      postMessage({ id, status: "success", result });
-    } catch (err) {
-      postMessage({ id, status: "error", error: err.message });
-    }
-  } else {
-    postMessage({ id, status: "error", error: `未知任务: ${task}` });
+  try {
+    const result = n * n;
+    self.postMessage({ id, result });
+  } catch (error) {
+    self.postMessage({ id, error: error.message });
   }
 };
 ```
 
-这个实例实现了一种远程过程调用（RPC）的目标，并且代码更符合现代异步编程的习惯。
+这种封装的优势：
+
+- 支持 async/await 语法，代码更清晰
+- 自动管理消息 ID，避免响应混乱
+- 统一的错误处理机制
+- 易于扩展和维护
 
 ### 转移所有权
 
-结构化克隆（复制）在处理大数据（如几百 MB 的 `ArrayBuffer`）时，性能开销会非常大。为此，现代浏览器包含另一种性能更高的方法：转移所有权。
+处理大文件（如图像、视频）时，结构化克隆的性能开销非常大。对于一个 100MB 的 `ArrayBuffer`，克隆可能需要数百毫秒，这会严重影响性能。
 
-[可转移对象](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Transferable_objects)从一个上下文转移到另一个上下文，而不会经过任何拷贝操作。
+使用[可转移对象](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Transferable_objects)可以实现零拷贝传递，将数据的所有权直接转移给接收方，而不是创建副本。
 
-`postMessage` 的第二个参数是一个数组，用于指定哪些对象应该被转移。
+```js
+// main.js
+const buffer = new ArrayBuffer(100 * 1024 * 1024); // 100MB
 
-**index.html:**
+// 第二个参数是要转移的对象数组
+worker.postMessage(buffer, [buffer]);
+
+// 转移后，原始 buffer 不可再使用
+console.log(buffer.byteLength); // 0
+```
+
+```js
+// worker.js
+self.onmessage = (e) => {
+  const buf = e.data;
+  console.log("收到的 buffer 大小:", buf.byteLength);
+
+  // 处理数据...
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < view.length; i++) {
+    view[i] = i % 256;
+  }
+
+  // 可以转移回主线程
+  self.postMessage(buf, [buf]);
+};
+```
+
+注意事项：
+
+- 转移后，发送方将无法再访问该对象
+- 转移是单向的，每次只能属于一个上下文
+- 适用于大数据传输，小数据不必使用
+- 转移是同步的，不涉及序列化
+
+### ES Module 模式
+
+传统 Worker 只支持全局脚本（classic script），无法使用现代 JavaScript 的 `import/export` 语法。这导致代码难以模块化、复用和 tree-shaking。
+
+#### 启用方式
+
+只需在创建 Worker 时传入 `{ type: 'module' }`：
+
+```js
+// main.js
+const worker = new Worker("worker.js", { type: "module" });
+```
+
+```js
+// utils.js
+export const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+export const multiply = (a, b) => a * b;
+```
+
+```js
+// worker.js
+import { sum, multiply } from "./utils.js";
+
+self.onmessage = (e) => {
+  const { type, data } = e.data;
+
+  if (type === "sum") {
+    self.postMessage(sum(data));
+  } else if (type === "multiply") {
+    self.postMessage(multiply(data[0], data[1]));
+  }
+};
+```
+
+#### 注意事项
+
+- 不能混用 `importScripts()`：ESM Worker 中调用 `importScripts()` 会抛出错误
+- 路径必须显式：`import './utils.js'` 不能省略 `./`
+- CORS 限制：模块文件必须满足 CORS 要求
+
+动态路径处理：
+
+```js
+// 使用 new URL 确保路径在打包后仍正确
+const worker = new Worker(new URL("./worker.js", import.meta.url), {
+  type: "module",
+});
+```
+
+## 关于线程安全
+
+Web Worker 使用真正的操作系统线程，但能通过以下机制避免并发问题：
+
+### 安全机制
+
+- 无共享内存（默认情况下）
+- 通信仅通过消息复制
+- 无法访问非线程安全资源（如 DOM）
+- 每个 Worker 拥有独立的事件循环
+
+因此，在正常使用 Web Worker 时，几乎不会出现竞态条件或数据竞争，开发者无需担心传统多线程编程中的锁、互斥量等复杂概念。
+
+### SharedArrayBuffer 的特殊情况
+
+`SharedArrayBuffer` 是一个例外，它允许在主线程和 Worker 之间共享内存。使用时需要注意：
+
+- 必须使用 `Atomics` API 进行原子操作
+- 需要处理潜在的竞态条件
+- 需要特殊的 COOP 和 COEP HTTP 头才能使用
+
+#### 为什么需要特殊的 HTTP 头
+
+由于 Spectre 安全漏洞的影响，从 2018 年开始，浏览器禁用了共享内存功能。2020 年，通过引入跨域隔离（cross-origin isolation）机制，浏览器重新启用了这一功能。
+
+要使用 `SharedArrayBuffer`，你的文档必须满足以下条件：
+
+1. **处于安全上下文**：HTTPS
+2. **跨域隔离**：设置以下 HTTP 响应头
+
+```http
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Opener-Policy: same-origin
+```
+
+这两个头的作用：
+
+- `Cross-Origin-Opener-Policy: same-origin`（COOP）：确保文档与其他跨域文档隔离在不同的浏览器上下文组中
+- `Cross-Origin-Embedder-Policy: require-corp`（COEP）：要求所有跨域资源必须明确允许被加载（通过 CORS 或 CORP 头）
+
+你可以通过 `crossOriginIsolated` 属性检查文档是否已跨域隔离：
+
+```js
+// main.js
+const myWorker = new Worker("worker.js");
+
+if (crossOriginIsolated) {
+  // 可以使用 SharedArrayBuffer
+  const buffer = new SharedArrayBuffer(16);
+  myWorker.postMessage(buffer);
+} else {
+  // 回退到普通 ArrayBuffer
+  const buffer = new ArrayBuffer(16);
+  myWorker.postMessage(buffer);
+}
+```
+
+#### 使用示例
+
+```js
+// main.js
+const sab = new SharedArrayBuffer(1024);
+const view = new Int32Array(sab);
+
+worker.postMessage(sab);
+
+// 原子操作
+Atomics.add(view, 0, 5);
+console.log(Atomics.load(view, 0)); // 5
+```
+
+```js
+// worker.js
+self.onmessage = (e) => {
+  const sab = e.data;
+  const view = new Int32Array(sab);
+
+  // 原子操作
+  Atomics.add(view, 0, 10);
+  console.log(Atomics.load(view, 0)); // 15
+};
+```
+
+注意事项：`SharedArrayBuffer` 本身不是可转移对象，它通过 `postMessage` 传递时会在接收端创建一个新的 `SharedArrayBuffer` 对象，但两者引用的是同一块共享内存。
+
+## 内容安全策略（CSP）
+
+Web Worker 拥有独立的内容安全策略（CSP）上下文，与创建它的 Document 对象完全隔离。因此，其 CSP 不会继承自父文档或父 Worker，而是单独由 Worker 脚本资源（worker.js）的 HTTP 响应头或 Blob URL 所定义的 CSP 头决定。
+
+### CSP 的应用规则
+
+**普通 Worker（通过 URL 加载）：**
+
+- CSP 策略仅由 Worker 脚本自身的 HTTP 响应头决定
+- 主页面的 `<meta http-equiv="Content-Security-Policy">` 对 Worker 无效
+- 若 Worker 脚本未设置 CSP，则默认无限制（可执行 `eval()`、内联脚本等）
+
+**Blob/Data URL Worker（如 `new Worker(URL.createObjectURL(...))`）：**
+
+- 继承创建者文档的 CSP 策略
+- 因此受限于主页面的 `script-src` 指令
+
+### 实际示例
+
+假设主页面设置了严格的 CSP：
+
+```http
+Content-Security-Policy: script-src 'self'
+```
+
+这会阻止主页面使用 `eval()`，但如果 Worker 脚本（worker.js）没有设置自己的 CSP 头，Worker 内部仍然可以使用 `eval()`：
+
+```js
+// worker.js
+self.onmessage = (e) => {
+  // 这在 Worker 中是允许的（如果 worker.js 没有设置 CSP）
+  const result = eval(e.data);
+  self.postMessage(result);
+};
+```
+
+### 安全建议
+
+为 Worker 脚本单独设置 CSP：
+
+```http
+Content-Security-Policy: script-src 'self'; worker-src 'self'
+```
+
+其中 `worker-src` 指令用于控制 Worker、Shared Worker、Service Worker 的加载源。若未设置，则回退到 `child-src`，再回退到 `default-src`。
+
+### 主页面控制 Worker 加载
+
+主页面可以通过 `worker-src` 指令限制可以加载哪些 Worker：
+
+```http
+Content-Security-Policy: worker-src 'self' https://example.com
+```
+
+这样只有同源或来自 `https://example.com` 的 Worker 脚本才能被加载。
+
+## 实际应用场景
+
+### 图像处理
 
 ```html
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Worker</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-    </style>
+    <title>图像处理</title>
   </head>
+
   <body>
-    <h1>转移所有权</h1>
-    <p>打开浏览器控制台查看输出结果</p>
+    <h1>图像处理</h1>
+    <p>使用 Worker 进行图像灰度化处理</p>
+    <div>
+      <button onclick="loadImage()">加载示例图像</button>
+      <button onclick="processImage()">灰度化处理</button>
+    </div>
+    <div class="canvas-container">
+      <div>
+        <h3>原图</h3>
+        <canvas id="original" width="400" height="300"></canvas>
+      </div>
+      <div>
+        <h3>处理后</h3>
+        <canvas id="processed" width="400" height="300"></canvas>
+      </div>
+    </div>
 
     <script src="main.js"></script>
   </body>
 </html>
 ```
 
-**main.js:**
-
 ```js
+// main.js
 const worker = new Worker("worker.js");
+const originalCanvas = document.getElementById("original");
+const processedCanvas = document.getElementById("processed");
+const originalCtx = originalCanvas.getContext("2d");
+const processedCtx = processedCanvas.getContext("2d");
 
-// 创建一个 32MB 的 ArrayBuffer
-const uInt8Array = new Uint8Array(1024 * 1024 * 32);
-for (let i = 0; i < uInt8Array.length; i++) {
-  uInt8Array[i] = i % 256; // 填充一些内容
+worker.onmessage = (e) => {
+  const processed = e.data;
+  processedCtx.putImageData(processed, 0, 0);
+};
+
+function loadImage() {
+  // 创建一个彩色渐变图像作为示例
+  const width = originalCanvas.width;
+  const height = originalCanvas.height;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const r = (x / width) * 255;
+      const g = (y / height) * 255;
+      const b = 128;
+      originalCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      originalCtx.fillRect(x, y, 1, 1);
+    }
+  }
 }
 
-const buffer = uInt8Array.buffer;
-
-console.log("Main: 转移前 buffer.byteLength =", buffer.byteLength);
-
-// 将 buffer 转移给 worker
-worker.postMessage(buffer, [buffer]);
-
-console.log("Main: 转移后 buffer.byteLength =", buffer.byteLength);
-
-// 监听 Worker 返回的数据
-worker.onmessage = (e) => {
-  const returnedBuffer = e.data;
-  console.log(
-    "Main: 收到 Worker 返回的 buffer.byteLength =",
-    returnedBuffer.byteLength
+function processImage() {
+  const imageData = originalCtx.getImageData(
+    0,
+    0,
+    originalCanvas.width,
+    originalCanvas.height
   );
-};
-```
 
-**worker.js:**
+  worker.postMessage({ imageData: imageData }, [imageData.data.buffer]);
+}
+```
 
 ```js
-onmessage = (e) => {
-  const receivedBuffer = e.data;
-  console.log("Worker: 收到 buffer.byteLength =", receivedBuffer.byteLength);
+// worker.js
+self.onmessage = (e) => {
+  const imageData = e.data.imageData;
+  const data = imageData.data;
 
-  // 再转回主线程
-  postMessage(receivedBuffer, [receivedBuffer]);
+  // 灰度化处理
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    data[i] = avg;
+    data[i + 1] = avg;
+    data[i + 2] = avg;
+  }
+
+  self.postMessage(imageData, [imageData.data.buffer]);
 };
 ```
 
-这种方式几乎是瞬时完成的，因为它只涉及内存所有权的交接。这是处理大型二进制数据（如文件、图像数据）时的首选方案。
+### 大数据计算
+
+```html
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>大数据计算</title>
+  </head>
+  <body>
+    <h1>质数计算</h1>
+    <p>使用 Worker 计算质数，不阻塞主线程</p>
+    <div>
+      <input type="number" id="maxInput" value="100000" placeholder="最大值" />
+      <button onclick="calculatePrimes()">计算质数</button>
+    </div>
+    <div id="result" style="white-space: pre-line; margin-top: 10px"></div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
+```
+
+```js
+// main.js
+const worker = new Worker("worker.js", { type: "module" });
+const resultEl = document.getElementById("result");
+
+async function calculatePrimes() {
+  const max = parseInt(document.getElementById("maxInput").value);
+
+  resultEl.textContent = `正在计算 ${max} 以内的质数...\n（主线程不会被阻塞，你可以继续操作页面）`;
+
+  const start = performance.now();
+
+  worker.postMessage({ task: "primes", max });
+
+  worker.onmessage = (e) => {
+    const primes = e.data;
+    const time = performance.now() - start;
+
+    resultEl.textContent = `找到 ${primes.length} 个质数\n`;
+    resultEl.textContent += `耗时: ${time.toFixed(2)}ms\n\n`;
+    resultEl.textContent += `前 20 个质数: ${primes
+      .slice(0, 20)
+      .join(", ")}...\n`;
+    resultEl.textContent += `最后 10 个质数: ${primes.slice(-10).join(", ")}`;
+  };
+}
+```
+
+```js
+// worker.js
+function findPrimes(max) {
+  const primes = [];
+  const isPrime = new Array(max + 1).fill(true);
+
+  for (let i = 2; i <= max; i++) {
+    if (isPrime[i]) {
+      primes.push(i);
+      for (let j = i * i; j <= max; j += i) {
+        isPrime[j] = false;
+      }
+    }
+  }
+
+  return primes;
+}
+
+self.onmessage = (e) => {
+  const { task, max } = e.data;
+
+  if (task === "primes") {
+    const result = findPrimes(max);
+    self.postMessage(result);
+  }
+};
+```
