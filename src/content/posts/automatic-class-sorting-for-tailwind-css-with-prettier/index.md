@@ -25,6 +25,7 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 然后在项目根目录下创建一个名为 `.prettierrc` 的配置文件，内容如下：
 
 ```json
+// .prettierrc
 {
   "plugins": ["prettier-plugin-tailwindcss"]
 }
@@ -35,6 +36,7 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 之后你可以在 `package.json` 文件中添加一个脚本来运行 Prettier：
 
 ```json
+// package.json
 {
   "scripts": {
     "format": "prettier --write --log-level warn ."
@@ -53,6 +55,7 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 如果你在项目中使用了 `clsx` 来动态组合类名，你可以在 `.prettierrc` 的配置文件中添加以下内容：
 
 ```json
+// .prettierrc
 {
   "tailwindFunctions": ["clsx"]
 }

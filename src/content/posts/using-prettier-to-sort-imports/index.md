@@ -25,6 +25,7 @@ pnpm add -D prettier @trivago/prettier-plugin-sort-imports
 然后在项目根目录下创建 `.prettierrc` 这样一个文件，之后就可以对规则进行配置：
 
 ```json
+// .prettierrc
 {
   "plugins": ["@trivago/prettier-plugin-sort-imports"],
   "tabWidth": 2,
@@ -106,6 +107,7 @@ import { useRef, useState, useEffect, useTransition } from "react";
 当项目中使用了 `prettier-plugin-tailwindcss` 的话，需要把这个插件放在最下面，否则这个类名排序插件和其他的 `Prettier` 插件可能会有一个兼容性问题。
 
 ```json
+// .prettierrc
 {
   "plugins": [
     "@trivago/prettier-plugin-sort-imports",
