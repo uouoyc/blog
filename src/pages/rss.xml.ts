@@ -128,5 +128,6 @@ export async function GET(context: APIContext) {
 		site: context.site,
 		items: feed,
 		customData: `<language>${siteConfig.lang}</language>`,
+		trailingSlash: false,
 	});
 }
