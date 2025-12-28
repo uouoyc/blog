@@ -32,13 +32,14 @@ import "../styles/panel-animations.css";
 interface Props {
 	title?: string;
 	banner?: string;
+	tags?: string[];
 	description?: string;
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
 }
 
-let { title, banner, description, lang, setOGTypeArticle, postSlug } =
+let { title, banner, tags, description, lang, setOGTypeArticle, postSlug } =
 	Astro.props;
 
 // apply a class to the body element to decide the height of the banner, only used for initial page load
@@ -164,6 +165,13 @@ if (siteConfig.font) {
 	// 组合成完整的 font-family 字符串
 	bodyFontFamily = fonts.join(", ");
 }
+
+// 获取 meta keywords
+const metaKeywords =
+	(tags && tags.length > 0 && tags.join(", ")) ||
+	(siteConfig.keywords &&
+		siteConfig.keywords.length > 0 &&
+		siteConfig.keywords.join(", "));
 ---
 
 <!doctype html>
@@ -174,7 +182,7 @@ if (siteConfig.font) {
 >
 	<head>
 		<!-- 第三方分析脚本 - 延迟加载优化 -->
-		<script is:inline>
+		<!-- <script is:inline>
 			// 使用 requestIdleCallback 延迟加载第三方脚本
 			function loadAnalytics() {
 				// Google Tag Manager
@@ -214,19 +222,15 @@ if (siteConfig.font) {
 			} else {
 				setTimeout(loadAnalytics, 3000);
 			}
-		</script>
+		</script> -->
 
 		<title>{pageTitle}</title>
 		<meta charset="UTF-8" />
-		<meta name="description" content={description || pageTitle} />
-		{
-			siteConfig.keywords && siteConfig.keywords.length > 0 && (
-				<meta
-					name="keywords"
-					content={siteConfig.keywords.join(", ")}
-				/>
-			)
-		}
+		<meta
+			name="description"
+			content={description || siteConfig.description}
+		/>
+		{metaKeywords && <meta name="keywords" content={metaKeywords} />}
 		<meta name="author" content={profileConfig.name} />
 		<meta property="og:site_name" content={siteConfig.title} />
 		<meta property="og:url" content={Astro.url} />

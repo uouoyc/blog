@@ -170,7 +170,7 @@
     }
     &::-webkit-scrollbar-track {
       background: transparent;
-      margin: 0 calc(var(--radius-large) + 2px); 
+      margin: 0 calc(var(--radius-large) + 2px);
     }
     &::-webkit-scrollbar-thumb {
       background: var(--scrollbar-bg);

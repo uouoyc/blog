@@ -34,6 +34,7 @@ const isSidebarTOC = tocMode === "sidebar";
 interface Props {
 	title?: string;
 	banner?: string;
+    tags?: string[];
 	description?: string;
 	lang?: string;
 	setOGTypeArticle?: boolean;
@@ -102,6 +103,7 @@ const bannerImages = await getBannerImages();
 const {
 	title,
 	banner,
+    tags,
 	description,
 	lang,
 	setOGTypeArticle,
@@ -205,20 +207,20 @@ const transparentClass = shouldEnableTransparency
 	: "";
 ---
 
-<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug}>
+<Layout title={title} banner={banner} tags={tags} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug}>
 
 <script is:inline define:vars={{navbarTransparentMode: siteConfig.banner?.navbar?.transparentMode || "semi", defaultWallpaperMode: siteConfig.wallpaperMode.defaultMode, defaultPostListLayout: siteConfig.postListLayout?.defaultMode || "list"}}>
 	// 立即执行，在页面渲染前应用壁纸模式和布局模式，避免闪烁
 	(function() {
 		const wallpaperMode = localStorage.getItem('wallpaperMode') || defaultWallpaperMode;
 		const body = document.body;
-		
+
 		// 定义 banner 高度常量（与 constants.ts 保持一致）
 		// const BANNER_HEIGHT = 35;
 		// const BANNER_HEIGHT_EXTEND = 30;
 		// const BANNER_HEIGHT_HOME = BANNER_HEIGHT + BANNER_HEIGHT_EXTEND;
 		// const MAIN_PANEL_OVERLAPS_BANNER_HEIGHT = 3.5;
-		
+
 		// 立即应用 body 类，确保首次渲染就是正确的状态
 		switch(wallpaperMode) {
 			case 'banner':
@@ -234,7 +236,7 @@ const transparentClass = shouldEnableTransparency
 				body.classList.add('no-banner-mode');
 				break;
 		}
-		
+
 		// 立即调整主内容区域位置和布局模式（避免闪烁和位置错误）
 		// 使用 requestAnimationFrame 确保 DOM 准备好
 		requestAnimationFrame(function() {

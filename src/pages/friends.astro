@@ -10,7 +10,7 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
 
 // 检查友链页面是否启用
 if (!siteConfig.featurePages.friends) {
-	return Astro.redirect("/404/");
+	return Astro.redirect("/404");
 }
 
 const friendsPost = await getEntry("spec", "friends");

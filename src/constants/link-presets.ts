@@ -10,47 +10,47 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 	},
 	[LinkPreset.About]: {
 		name: i18n(I18nKey.about),
-		url: "/about/",
+		url: "/about",
 		icon: "material-symbols:person",
 	},
 	[LinkPreset.Archive]: {
 		name: i18n(I18nKey.archive),
-		url: "/archive/",
+		url: "/archive",
 		icon: "material-symbols:archive",
 	},
 	[LinkPreset.Friends]: {
 		name: i18n(I18nKey.friends),
-		url: "/friends/",
+		url: "/friends",
 		icon: "material-symbols:group",
 	},
 	[LinkPreset.Anime]: {
 		name: i18n(I18nKey.anime),
-		url: "/anime/",
+		url: "/anime",
 		icon: "material-symbols:movie",
 	},
 	[LinkPreset.Diary]: {
 		name: i18n(I18nKey.diary),
-		url: "/diary/",
+		url: "/diary",
 		icon: "material-symbols:book",
 	},
 	[LinkPreset.Gallery]: {
 		name: i18n(I18nKey.gallery),
-		url: "/gallery/",
+		url: "/gallery",
 		icon: "material-symbols:photo-library",
 	},
 	[LinkPreset.Projects]: {
 		name: i18n(I18nKey.projects),
-		url: "/projects/",
+		url: "/projects",
 		icon: "material-symbols:work",
 	},
 	[LinkPreset.Skills]: {
 		name: i18n(I18nKey.skills),
-		url: "/skills/",
+		url: "/skills",
 		icon: "material-symbols:psychology",
 	},
 	[LinkPreset.Timeline]: {
 		name: i18n(I18nKey.timeline),
-		url: "/timeline/",
+		url: "/timeline",
 		icon: "material-symbols:timeline",
 	},
 };
