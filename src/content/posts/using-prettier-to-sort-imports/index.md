@@ -27,28 +27,28 @@ pnpm add -D prettier @trivago/prettier-plugin-sort-imports
 ```json
 // .prettierrc
 {
-  "plugins": ["@trivago/prettier-plugin-sort-imports"],
-  "tabWidth": 2,
-  "trailingComma": "all",
-  "singleQuote": false,
-  "jsxSingleQuote": false,
-  "semi": true,
-  "endOfLine": "lf",
-  "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true,
-  "importOrder": [
-    "^react",
-    "^next",
-    "<THIRD_PARTY_MODULES>",
-    "@/app/(.*)",
-    "@/components/(.*)",
-    "@/libs/(.*)",
-    "@/.*",
-    "^./(.*)",
-    "^../(.*)",
+	"plugins": ["@trivago/prettier-plugin-sort-imports"],
+	"tabWidth": 2,
+	"trailingComma": "all",
+	"singleQuote": false,
+	"jsxSingleQuote": false,
+	"semi": true,
+	"endOfLine": "lf",
+	"importOrderSeparation": true,
+	"importOrderSortSpecifiers": true,
+	"importOrder": [
+		"^react",
+		"^next",
+		"<THIRD_PARTY_MODULES>",
+		"@/app/(.*)",
+		"@/components/(.*)",
+		"@/libs/(.*)",
+		"@/.*",
+		"^./(.*)",
+		"^../(.*)",
 
-    ".(css|less|scss|sass|stylus)$"
-  ]
+		".(css|less|scss|sass|stylus)$"
+	]
 }
 ```
 
@@ -109,9 +109,9 @@ import { useRef, useState, useEffect, useTransition } from "react";
 ```json
 // .prettierrc
 {
-  "plugins": [
-    "@trivago/prettier-plugin-sort-imports",
-    "prettier-plugin-tailwindcss"
-  ]
+	"plugins": [
+		"@trivago/prettier-plugin-sort-imports",
+		"prettier-plugin-tailwindcss"
+	]
 }
 ```

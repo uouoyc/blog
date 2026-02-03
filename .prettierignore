@@ -25,4 +25,4 @@ Thumbs.db
 .env.*.local
 
 # Docs
-**/*.md
+# **/*.md

@@ -30,17 +30,17 @@ draft: false
 ```ts
 // hooks/useFileUpload.ts
 const addFiles = useCallback(async (fileList: FileList) => {
-  const newFiles: FileItem[] = Array.from(fileList).map((file) => ({
-    id: crypto.randomUUID(),
-    file,
-    status: "pending", // 初始状态
-    progress: 0,
-    // ...其他属性
-  }));
+	const newFiles: FileItem[] = Array.from(fileList).map((file) => ({
+		id: crypto.randomUUID(),
+		file,
+		status: "pending", // 初始状态
+		progress: 0,
+		// ...其他属性
+	}));
 
-  setFiles((prev) => [...prev, ...newFiles]); // 更新状态
-  queueRef.current.push(...newFiles); // 加入后台队列
-  processQueue(); // 触发调度器
+	setFiles((prev) => [...prev, ...newFiles]); // 更新状态
+	queueRef.current.push(...newFiles); // 加入后台队列
+	processQueue(); // 触发调度器
 }, []);
 ```
 
@@ -55,22 +55,22 @@ const addFiles = useCallback(async (fileList: FileList) => {
 ```ts
 // hooks/useFileUpload.ts
 const processQueue = useCallback(async () => {
-  // 循环条件：队列不为空 且 当前并发数未满
-  while (
-    queueRef.current.length > 0 &&
-    uploadingCountRef.current < UPLOAD_CONFIG.MAX_CONCURRENT_FILES
-  ) {
-    const fileItem = queueRef.current.shift();
-    if (fileItem) {
-      uploadingCountRef.current++; // 占用并发名额
+	// 循环条件：队列不为空 且 当前并发数未满
+	while (
+		queueRef.current.length > 0 &&
+		uploadingCountRef.current < UPLOAD_CONFIG.MAX_CONCURRENT_FILES
+	) {
+		const fileItem = queueRef.current.shift();
+		if (fileItem) {
+			uploadingCountRef.current++; // 占用并发名额
 
-      // 开始上传，无论成功失败，最后都要释放名额并尝试处理下一个
-      uploadFile(fileItem).finally(() => {
-        uploadingCountRef.current--;
-        processQueue(); // 递归调用
-      });
-    }
-  }
+			// 开始上传，无论成功失败，最后都要释放名额并尝试处理下一个
+			uploadFile(fileItem).finally(() => {
+				uploadingCountRef.current--;
+				processQueue(); // 递归调用
+			});
+		}
+	}
 }, [uploadFile]);
 ```
 
@@ -103,15 +103,15 @@ let currentChunk = 0;
 const chunks = Math.ceil(file.size / chunkSize);
 
 fileReader.onload = (e) => {
-  // 将读取到的二进制数据追加到 MD5 计算器中
-  spark.append(e.target.result);
-  currentChunk++;
+	// 将读取到的二进制数据追加到 MD5 计算器中
+	spark.append(e.target.result);
+	currentChunk++;
 
-  if (currentChunk < chunks) {
-    loadNext(); // 继续读取下一片
-  } else {
-    resolve(spark.end()); // 全部读取完成，返回最终的 MD5 字符串
-  }
+	if (currentChunk < chunks) {
+		loadNext(); // 继续读取下一片
+	} else {
+		resolve(spark.end()); // 全部读取完成，返回最终的 MD5 字符串
+	}
 };
 ```
 
@@ -138,8 +138,8 @@ fileReader.onload = (e) => {
 // app/api/upload/check/route.ts
 const existingPath = await findInIndex(md5);
 if (existingPath) {
-  // ... 验证文件存在性 ...
-  return NextResponse.json({ exists: true, path: existingPath });
+	// ... 验证文件存在性 ...
+	return NextResponse.json({ exists: true, path: existingPath });
 }
 ```
 
@@ -165,7 +165,7 @@ const uploadedChunks = checkResult.uploadedChunks || [];
 const totalChunks = fileItem.totalChunks;
 // 过滤出还需要上传的分片索引
 const chunksToUpload = Array.from({ length: totalChunks }, (_, i) => i).filter(
-  (i) => !uploadedChunks.includes(i)
+	(i) => !uploadedChunks.includes(i),
 );
 
 // 执行并发上传
@@ -228,19 +228,19 @@ const uploadChunksWithConcurrency = async (chunks: number[], md5: string) => {
 const writeStream = fs.createWriteStream(targetPath);
 
 for (let i = 0; i < totalChunks; i++) {
-  const chunkPath = path.join(tempDir, `${i}.chunk`);
-  await new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(chunkPath);
-    // 写流，{ end: false } 防止读流结束时自动关闭写流
-    readStream.pipe(writeStream, { end: false });
-    // 读流结束，表示当前 chunk 写入完成，resolve 进入下一个循环
-    rs.on("end", resolve);
-    // 读流发生错误
-    rs.on("error", (err) => {
-      writeStream.destroy(err);
-      reject(err);
-    });
-  });
+	const chunkPath = path.join(tempDir, `${i}.chunk`);
+	await new Promise((resolve, reject) => {
+		const readStream = fs.createReadStream(chunkPath);
+		// 写流，{ end: false } 防止读流结束时自动关闭写流
+		readStream.pipe(writeStream, { end: false });
+		// 读流结束，表示当前 chunk 写入完成，resolve 进入下一个循环
+		rs.on("end", resolve);
+		// 读流发生错误
+		rs.on("error", (err) => {
+			writeStream.destroy(err);
+			reject(err);
+		});
+	});
 }
 
 writeStream.end(); // 手动关闭
@@ -263,24 +263,24 @@ writeStream.end(); // 手动关闭
 let indexWritePromise: Promise<void> = Promise.resolve();
 
 export async function addToIndex(md5: string, filePath: string): Promise<void> {
-  const newOperation = indexWritePromise
-    .then(async () => {
-      // 1. 读取
-      const index = await readFileIndex();
+	const newOperation = indexWritePromise
+		.then(async () => {
+			// 1. 读取
+			const index = await readFileIndex();
 
-      // 2. 修改
-      index[md5] = filePath;
+			// 2. 修改
+			index[md5] = filePath;
 
-      // 3. 写入
-      await writeFileIndex(index);
-    })
-    .catch((error) => {
-      console.error("写入索引失败:", error);
-    });
+			// 3. 写入
+			await writeFileIndex(index);
+		})
+		.catch((error) => {
+			console.error("写入索引失败:", error);
+		});
 
-  // 更新全局 Promise 链，确保下一个 addToIndex 等待当前这个操作完成
-  indexWritePromise = newOperation;
+	// 更新全局 Promise 链，确保下一个 addToIndex 等待当前这个操作完成
+	indexWritePromise = newOperation;
 
-  return newOperation;
+	return newOperation;
 }
 ```

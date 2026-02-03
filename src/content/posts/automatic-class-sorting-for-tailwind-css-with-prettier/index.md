@@ -27,7 +27,7 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 ```json
 // .prettierrc
 {
-  "plugins": ["prettier-plugin-tailwindcss"]
+	"plugins": ["prettier-plugin-tailwindcss"]
 }
 ```
 
@@ -38,9 +38,9 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 ```json
 // package.json
 {
-  "scripts": {
-    "format": "prettier --write --log-level warn ."
-  }
+	"scripts": {
+		"format": "prettier --write --log-level warn ."
+	}
 }
 ```
 
@@ -57,7 +57,7 @@ pnpm add -D prettier prettier-plugin-tailwindcss
 ```json
 // .prettierrc
 {
-  "tailwindFunctions": ["clsx"]
+	"tailwindFunctions": ["clsx"]
 }
 ```
 
