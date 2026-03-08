@@ -24,9 +24,9 @@
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.6",
-		"@astrojs/rss": "^4.0.14",
-		"@astrojs/sitemap": "^3.6.0",
-		"@astrojs/svelte": "7.2.2",
+		"@astrojs/rss": "^4.0.15",
+		"@astrojs/sitemap": "^3.7.0",
+		"@astrojs/svelte": "7.2.5",
 		"@astrojs/tailwind": "^6.0.2",
 		"@expressive-code/core": "^0.41.3",
 		"@expressive-code/plugin-collapsible-sections": "^0.41.3",
@@ -42,7 +42,7 @@
 		"@iconify/svelte": "^4.2.0",
 		"@swup/astro": "^1.7.0",
 		"@tailwindcss/typography": "^0.5.19",
-		"astro": "5.16.4",
+		"astro": "5.18.0",
 		"astro-expressive-code": "^0.41.3",
 		"astro-icon": "^1.1.5",
 		"crypto-js": "^4.2.0",
@@ -90,8 +90,8 @@
 	},
 	"packageManager": "pnpm@10.22.0",
 	"pnpm": {
-    "overrides": {
-      "@emmetio/css-parser": "https://codeload.github.com/ramya-rao-a/css-parser/tar.gz/370c480ac103bd17c7bcfb34bf5d577dc40d3660"
-    }
-  }
+		"overrides": {
+			"@emmetio/css-parser": "https://codeload.github.com/ramya-rao-a/css-parser/tar.gz/370c480ac103bd17c7bcfb34bf5d577dc40d3660"
+		}
+	}
 }
