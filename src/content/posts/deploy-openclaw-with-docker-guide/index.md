@@ -192,7 +192,7 @@ services:
 EOF
 ```
 
-### 步骤 5：启动服务
+### 步骤 5：初始化配置
 
 ```bash
 cd /data/openclaw
