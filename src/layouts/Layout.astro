@@ -10,6 +10,8 @@ import {
 } from "@/config";
 import { umamiConfig } from "../config";
 
+import Analytics from "@vercel/analytics/astro";
+
 const BANNER_HEIGHT = 35;
 const BANNER_HEIGHT_EXTEND = 30;
 const BANNER_HEIGHT_HOME = BANNER_HEIGHT + BANNER_HEIGHT_EXTEND;
@@ -346,6 +348,8 @@ const metaKeywords =
 
 		<!-- Umami Analytics -->
 		{umamiEnabled && umamiScripts && <Fragment set:html={umamiScripts} />}
+
+		<Analytics />
 	</head>
 	<body
 		class="min-h-screen"

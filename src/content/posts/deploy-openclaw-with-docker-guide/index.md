@@ -214,11 +214,11 @@ vim /data/openclaw/.openclaw/openclaw.json
 
 ```json
 {
- "gateway": {
-  "controlUi": {
-   "allowedOrigins": ["http://127.0.0.1:18789"]
-  }
- }
+	"gateway": {
+		"controlUi": {
+			"allowedOrigins": ["http://127.0.0.1:18789"]
+		}
+	}
 }
 ```
 
