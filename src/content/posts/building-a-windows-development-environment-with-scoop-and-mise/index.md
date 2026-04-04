@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["windows", "scoop", "mise"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 由于在 Windows 上配置开发环境过于麻烦，还可能会有**环境变量污染**、**多版本冲突**等问题，所以目前我推荐的方案是：**[Scoop](https://scoop.sh/)**（包管理器）+ **[Mise](https://mise.jdx.dev/)**（运行时版本管理）。

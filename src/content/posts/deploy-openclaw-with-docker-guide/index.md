@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["docker", "docker compose", "openclaw"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 ## 前置准备

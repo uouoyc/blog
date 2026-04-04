@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["react", "nextjs", "file uploads"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 我们的核心思路是将大文件通过切割成无数个微小的分片（Chunk），然后上传这些分片，最后再通过合并分片，实现文件的分片上传、断点续传以及秒传等功能。
@@ -23,7 +24,7 @@ draft: false
 在前端，我们维护了一个 `queueRef` 队列作为任务池。当用户选择文件后，我们首先执行以下步骤：
 
 1. **封装数据：** 将每个原始 `File` 对象封装成一个包含元数据的 `FileItem` 对象。
-2. **初始化状态：** 将 `FileItem` 的状态初始化为 `"pending"`，进度为 `0`。
+2. **初始化状态：** 将 `FileItem` 的状态初始化为 `pending`，进度为 `0`。
 3. **推入队列：** 将新创建的 `FileItem` 推入 `queueRef` 等待调度。
 4. **触发调度器：** 随后立即调用 `processQueue()` 尝试开始处理。
 

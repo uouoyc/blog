@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["prettier"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 在日常开发中，为了使项目中的代码整洁有序，我们除了格式化代码，也需要对 `import` 进行一个格式化。

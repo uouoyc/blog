@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["linux", "docker", "docker compose", "docker registry"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 ## Docker 环境搭建

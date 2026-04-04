@@ -6,6 +6,7 @@ image: "./cover.webp"
 tags: ["tailwind css", "prettier"]
 category: "学习笔记"
 draft: false
+lang: "zh-CN"
 ---
 
 最近在学习 NextJs，在使用 Tailwind CSS 时，看到 Tailwind 官方的一篇文章： [Automatic Class Sorting with Prettier](https://tailwindcss.com/blog/automatic-class-sorting-with-prettier) ，里面介绍了如何使用 Prettier 插件来自动排序 Tailwind CSS 类名。
